@@ -1,11 +1,16 @@
 import os
 import json
+import logging
 from statistical_functions import ForexStats
 from mt5_data import get_data
+from constants import WINDOW_LENGTH
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Define output subfolder
 output_folder = 'output_folder'
@@ -17,19 +22,16 @@ with open('pairs_corr.json', 'r') as file:
 
 # Iterate over all pairs
 for pair in pairs:
-    print(f'Processing pair: {pair}')
+    logger.info(f'Processing pair: {pair}')
 
     # Get the data for the current pair
-    data = get_data(pair, 5, 28800 + 288, 'close', 'dataframe')
-
-    # Define the length of the window for the analysis
-    window_length = 288
+    data = get_data(pair, 5, 28800 + WINDOW_LENGTH, 'close', 'dataframe')
 
     # Perform the analysis for every window of close prices
     results_list = []
-    for i in range(window_length, len(data)):
+    for i in range(WINDOW_LENGTH, len(data)):
         # Get the close prices for the current window
-        window_data = data.iloc[i-window_length:i]
+        window_data = data.iloc[i-WINDOW_LENGTH:i]
 
         # Convert the close prices to numpy arrays
         arr1 = np.array(window_data.iloc[:, 0])
@@ -65,6 +67,7 @@ for pair in pairs:
     # Save the current results to a CSV file
     results.to_csv(os.path.join(
         output_folder, f'{pair[0]}_{pair[1]}_backtest_results.csv'))
+    logger.info(f'Saved results to {output_folder}/{pair[0]}_{pair[1]}_backtest_results.csv')
 
     # Create subplot layout
     fig = make_subplots(
@@ -105,3 +108,4 @@ for pair in pairs:
     # Save to HTML
     fig.write_html(os.path.join(
         output_folder, f'{pair[0]}_{pair[1]}_backtest_results.html'))
+    logger.info(f'Saved HTML to {output_folder}/{pair[0]}_{pair[1]}_backtest_results.html')

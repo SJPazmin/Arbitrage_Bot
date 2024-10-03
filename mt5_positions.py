@@ -1,5 +1,9 @@
 import MetaTrader5 as mt5
 from mt5_connector import connect_to_mt5
+import logging
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Define constants for the actions, fillings, and time order settings
 ACTION = mt5.TRADE_ACTION_DEAL
@@ -38,16 +42,17 @@ def place_market_order(symbol, type, volume: float, magic_number: int = 0, comme
     # Check if the order request is valid
     check = mt5.order_check(request)
     if check is None or check.retcode != 0:
-        print("Order check failed with error code: {}".format(
+        logger.error("Order check failed with error code: {}".format(
             check.retcode if check is not None else 'None'))
         return 0
 
     # Send the order request
     result = mt5.order_send(request)
     if result.retcode != mt5.TRADE_RETCODE_DONE:
-        print("Order failed with error code: {}".format(result.retcode))
+        logger.error("Order failed with error code: {}".format(result.retcode))
         return 0
 
+    logger.info(f"Order placed successfully: {result.order}")
     # Return the order number
     return result.order
 
@@ -59,7 +64,7 @@ def close_order_by_ticket(ticket: int, comment: str = ""):
     # Get the position details
     position_info = mt5.positions_get(ticket=ticket)
     if position_info == ():
-        print(f"No positions with ticket {ticket}")
+        logger.error(f"No positions with ticket {ticket}")
         return False
 
     # Extract the necessary details from the position
@@ -84,11 +89,11 @@ def close_order_by_ticket(ticket: int, comment: str = ""):
     # Send the close order request
     result = mt5.order_send(request)
     if result.retcode != mt5.TRADE_RETCODE_DONE:
-        print(
+        logger.error(
             "Position Close failed, retcode={} - {}".format(result.retcode, result.comment))
         return False
     elif result.retcode == mt5.TRADE_RETCODE_DONE:
-        print("Position {} Closed on {}, comment = {}".format(
+        logger.info("Position {} Closed on {}, comment = {}".format(
             result.order, request['symbol'], result.comment))
         return True
 

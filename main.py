@@ -13,10 +13,10 @@ logging.basicConfig(filename='app.log', filemode='a',
 if __name__ == "__main__":
     last_candle_time = 0
     while True:
-        if last_candle_time != get_time('EURUSD', 5):
+        if last_candle_time != get_time('EURUSD', TIMEFRAME):
             try:
                 # Get the current time
-                last_candle_time = get_time('EURUSD', 5)
+                last_candle_time = get_time('EURUSD', TIMEFRAME)
 
                 logging.info("Storing cointegrated pairs...")
                 cointegrated_pairs = find_cointegrated_pairs()
@@ -25,10 +25,10 @@ if __name__ == "__main__":
                 logging.error(f"Unexpected error occurred: {str(e)}")
                 time.sleep(5)  # wait for 5 seconds before next iteration
 
-        if True:
-            #Manage Existing Positions
+        if MANAGE_EXITS:
+            # Manage Existing Positions
             pass
 
-        if True:
-            #Manage New Positions
-            
+        if PLACE_TRADES:
+            # Manage New Positions
+            pass

@@ -9,13 +9,15 @@ import logging
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-
 try:
     with open(COINTEGRATED_PAIRS_FILE, 'r') as file:
         pairs = json.load(file)
-# Handle file not found error
-except:
+except FileNotFoundError:
+    logger.error(f"Error: The file {COINTEGRATED_PAIRS_FILE} does not exist.")
+    pairs = []
+except json.JSONDecodeError:
+    logger.error(f"Error: The file {COINTEGRATED_PAIRS_FILE} does not contain valid JSON.")
     pairs = []
 
 for pair in pairs:
-    print(f'Processing pair: {pair}')
+    logger.info(f'Processing pair: {pair}')

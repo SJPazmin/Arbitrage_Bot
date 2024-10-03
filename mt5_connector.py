@@ -21,7 +21,7 @@ def connect_to_mt5(retries=3, delay=1):
     for i in range(retries):
         try:
             if mt5.initialize():
-                # logging.info('Connected to MetaTrader5 account.')
+                logging.info('Connected to MetaTrader5 account.')
                 return True
             else:
                 logging.error('Failed to initialize MetaTrader5.')

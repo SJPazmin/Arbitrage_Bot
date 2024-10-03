@@ -30,7 +30,13 @@ class ForexStats:
 
         :return: A float representing the correlation coefficient ranging from -1 to 1. 
         """
-        return np.corrcoef(self.arr1, self.arr2)[0, 1]
+        try:
+            correlation = np.corrcoef(self.arr1, self.arr2)[0, 1]
+            logger.info(f"Calculated correlation: {correlation}")
+            return correlation
+        except Exception as e:
+            logger.error(f"Error calculating correlation: {str(e)}")
+            return 0.0
 
     def check_cointegration(self, threshold: float = 0.05) -> bool:
         """
@@ -39,8 +45,14 @@ class ForexStats:
         :param threshold: A float representing the p-value cut-off for deciding cointegration. Default is 0.05.
         :return: A boolean value. True if p-value is less than threshold (indicating cointegration), False otherwise.
         """
-        _, pvalue, _ = coint(self.arr1, self.arr2)
-        return pvalue < threshold
+        try:
+            _, pvalue, _ = coint(self.arr1, self.arr2)
+            cointegrated = pvalue < threshold
+            logger.info(f"Cointegration test p-value: {pvalue}, cointegrated: {cointegrated}")
+            return cointegrated
+        except Exception as e:
+            logger.error(f"Error checking cointegration: {str(e)}")
+            return False
 
     def check_stationarity(self, threshold: float = 0.05) -> bool:
         """
@@ -49,8 +61,14 @@ class ForexStats:
         :param threshold: A float representing the p-value cut-off for deciding stationarity. Default is 0.05.
         :return: A boolean value. True if p-value is less than threshold (indicating stationarity), False otherwise.
         """
-        adf_result = adfuller(self.spread)
-        return adf_result[1] < threshold
+        try:
+            adf_result = adfuller(self.spread)
+            stationary = adf_result[1] < threshold
+            logger.info(f"ADF test p-value: {adf_result[1]}, stationary: {stationary}")
+            return stationary
+        except Exception as e:
+            logger.error(f"Error checking stationarity: {str(e)}")
+            return False
 
     def calculate_hedge_ratio(self) -> float:
         """
@@ -59,7 +77,13 @@ class ForexStats:
 
         :return: A float representing the hedge ratio.
         """
-        return self.model.params[0]
+        try:
+            hedge_ratio = self.model.params[0]
+            logger.info(f"Calculated hedge ratio: {hedge_ratio}")
+            return hedge_ratio
+        except Exception as e:
+            logger.error(f"Error calculating hedge ratio: {str(e)}")
+            return 0.0
 
     def calculate_spread(self) -> np.ndarray:
         """
@@ -68,7 +92,13 @@ class ForexStats:
 
         :return: A 1-D numpy array representing the spread of the two time-series.
         """
-        return self.arr1 - self.hedge_ratio * self.arr2
+        try:
+            spread = self.arr1 - self.hedge_ratio * self.arr2
+            logger.info("Calculated spread")
+            return spread
+        except Exception as e:
+            logger.error(f"Error calculating spread: {str(e)}")
+            return np.array([])
 
     def calculate_half_life(self) -> float:
         """
@@ -77,18 +107,24 @@ class ForexStats:
 
         :return: A float representing the half-life of the spread.
         """
-        if np.any(pd.isnull(self.spread)):
-            logging.warning(
-                'NaN values found. Replacing with backward fill method.')
-            spread_lag = pd.Series(self.spread).shift(
-                1).fillna(method='bfill').values
-        else:
-            spread_lag = np.roll(self.spread, 1)  # equivalent to shift
-        spread_ret = self.spread - spread_lag
-        spread_lag2 = sm.add_constant(spread_lag)
-        model = sm.OLS(spread_ret, spread_lag2)
-        res = model.fit()
-        return -np.log(2) / res.params[1]
+        try:
+            if np.any(pd.isnull(self.spread)):
+                logging.warning(
+                    'NaN values found. Replacing with backward fill method.')
+                spread_lag = pd.Series(self.spread).shift(
+                    1).fillna(method='bfill').values
+            else:
+                spread_lag = np.roll(self.spread, 1)  # equivalent to shift
+            spread_ret = self.spread - spread_lag
+            spread_lag2 = sm.add_constant(spread_lag)
+            model = sm.OLS(spread_ret, spread_lag2)
+            res = model.fit()
+            half_life = -np.log(2) / res.params[1]
+            logger.info(f"Calculated half-life: {half_life}")
+            return half_life
+        except Exception as e:
+            logger.error(f"Error calculating half-life: {str(e)}")
+            return 0.0
 
     def calculate_zscore(self) -> np.ndarray:
         """
@@ -97,7 +133,13 @@ class ForexStats:
 
         :return: A 1-D numpy array representing the z-score of the spread.
         """
-        return stats.zscore(self.spread)
+        try:
+            zscore = stats.zscore(self.spread)
+            logger.info("Calculated z-score")
+            return zscore
+        except Exception as e:
+            logger.error(f"Error calculating z-score: {str(e)}")
+            return np.array([])
 
     def calculate_zscore_rolling(self, window: int = 21) -> np.ndarray:
         """
@@ -107,8 +149,13 @@ class ForexStats:
         :param window: An integer representing the window size for the rolling z-score calculation. Default is 21.
         :return: A 1-D numpy array representing the rolling z-score of the spread.
         """
-        spread_series = pd.Series(self.spread)
-        mean = spread_series.rolling(window=window).mean()
-        std = spread_series.rolling(window=window).std()
-        zscore_rolling = (spread_series - mean) / std
-        return zscore_rolling.values  # Convert the result back to np.ndarray
+        try:
+            spread_series = pd.Series(self.spread)
+            mean = spread_series.rolling(window=window).mean()
+            std = spread_series.rolling(window=window).std()
+            zscore_rolling = (spread_series - mean) / std
+            logger.info("Calculated rolling z-score")
+            return zscore_rolling.values  # Convert the result back to np.ndarray
+        except Exception as e:
+            logger.error(f"Error calculating rolling z-score: {str(e)}")
+            return np.array([])

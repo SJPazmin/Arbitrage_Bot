@@ -1,8 +1,6 @@
 import MetaTrader5 as mt5
 import pandas as pd
-from mt5_connector import connect_to_mt5
 import logging
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -67,16 +65,15 @@ def get_data_for_symbol(symbol, timeframe, count, data_type):
 def get_data(symbols, timeframe, count, data_type='close', output_format='dataframe') -> pd.DataFrame:
     check_input_validity(symbols, data_type, output_format)
 
-    if not connect_to_mt5():
-        logging.error("Failed to connect to MetaTrader5")
+    try:
+        data = pd.concat(
+            [get_data_for_symbol(symbol, timeframe, count, data_type) for symbol in symbols], axis=1)
+        data.dropna(inplace=True)
+        logging.info(f"Fetched data for symbols: {symbols}")
+        return get_output(data, output_format)
+    except Exception as e:
+        logging.error(f"Error fetching data for symbols {symbols}: {str(e)}")
         return pd.DataFrame()
-
-    data = pd.concat(
-        [get_data_for_symbol(symbol, timeframe, count, data_type) for symbol in symbols], axis=1)
-
-    data.dropna(inplace=True)
-
-    return get_output(data, output_format)
 
 
 def get_output(data, output_format):
@@ -90,23 +87,28 @@ def get_output(data, output_format):
 
 @connect_and_execute
 def get_spread(symbol: str) -> float:
-    symbol_info = mt5.symbol_info(symbol)
-    if symbol_info is not None:
-        return symbol_info.spread
-    else:
-        logging.error(f"Error getting spread of {symbol}, returning 0")
+    try:
+        symbol_info = mt5.symbol_info(symbol)
+        if symbol_info is not None:
+            logging.info(f"Fetched spread for symbol: {symbol}")
+            return symbol_info.spread
+        else:
+            logging.error(f"Error getting spread of {symbol}, returning 0")
+            return 0
+    except Exception as e:
+        logging.error(f"Error fetching spread for symbol {symbol}: {str(e)}")
         return 0
 
 
 @connect_and_execute
 def get_time(symbol: str, timeframe: int = mt5.TIMEFRAME_M5) -> int:
-    time = 0
     try:
         time = pd.DataFrame(mt5.copy_rates_from_pos(
             symbol, timeframe, 0, 1)).loc[:, ['time']]
         time = time['time'].iloc[0]
+        logging.info(f"Fetched time for symbol: {symbol}")
         return time
     except Exception as e:
         logging.error(
             f"Failed to get time for {symbol} {timeframe}. Error: {str(e)}")
-        return time
+        return 0
